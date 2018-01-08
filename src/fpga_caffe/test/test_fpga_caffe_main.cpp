@@ -1,4 +1,205 @@
 #include "fpga_caffe/test/test_fpga_caffe_main.hpp"
+#include <stdarg.h>
+#include <stdio.h> 
+#include <unistd.h> // readlink, chdir
+
+void printError(cl_int error) {
+  // Print error message
+  switch(error)
+  {
+    case 0:
+      break;
+    case -1:
+      printf("CL_DEVICE_NOT_FOUND ");
+      break;
+    case -2:
+      printf("CL_DEVICE_NOT_AVAILABLE ");
+      break;
+    case -3:
+      printf("CL_COMPILER_NOT_AVAILABLE ");
+      break;
+    case -4:
+      printf("CL_MEM_OBJECT_ALLOCATION_FAILURE ");
+      break;
+    case -5:
+      printf("CL_OUT_OF_RESOURCES ");
+      break;
+    case -6:
+      printf("CL_OUT_OF_HOST_MEMORY ");
+      break;
+    case -7:
+      printf("CL_PROFILING_INFO_NOT_AVAILABLE ");
+      break;
+    case -8:
+      printf("CL_MEM_COPY_OVERLAP ");
+      break;
+    case -9:
+      printf("CL_IMAGE_FORMAT_MISMATCH ");
+      break;
+    case -10:
+      printf("CL_IMAGE_FORMAT_NOT_SUPPORTED ");
+      break;
+    case -11:
+      printf("CL_BUILD_PROGRAM_FAILURE ");
+      break;
+    case -12:
+      printf("CL_MAP_FAILURE ");
+      break;
+    case -13:
+      printf("CL_MISALIGNED_SUB_BUFFER_OFFSET ");
+      break;
+    case -14:
+      printf("CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST ");
+      break;
+
+    case -30:
+      printf("CL_INVALID_VALUE ");
+      break;
+    case -31:
+      printf("CL_INVALID_DEVICE_TYPE ");
+      break;
+    case -32:
+      printf("CL_INVALID_PLATFORM ");
+      break;
+    case -33:
+      printf("CL_INVALID_DEVICE ");
+      break;
+    case -34:
+      printf("CL_INVALID_CONTEXT ");
+      break;
+    case -35:
+      printf("CL_INVALID_QUEUE_PROPERTIES ");
+      break;
+    case -36:
+      printf("CL_INVALID_COMMAND_QUEUE ");
+      break;
+    case -37:
+      printf("CL_INVALID_HOST_PTR ");
+      break;
+    case -38:
+      printf("CL_INVALID_MEM_OBJECT ");
+      break;
+    case -39:
+      printf("CL_INVALID_IMAGE_FORMAT_DESCRIPTOR ");
+      break;
+    case -40:
+      printf("CL_INVALID_IMAGE_SIZE ");
+      break;
+    case -41:
+      printf("CL_INVALID_SAMPLER ");
+      break;
+    case -42:
+      printf("CL_INVALID_BINARY ");
+      break;
+    case -43:
+      printf("CL_INVALID_BUILD_OPTIONS ");
+      break;
+    case -44:
+      printf("CL_INVALID_PROGRAM ");
+      break;
+    case -45:
+      printf("CL_INVALID_PROGRAM_EXECUTABLE ");
+      break;
+    case -46:
+      printf("CL_INVALID_KERNEL_NAME ");
+      break;
+    case -47:
+      printf("CL_INVALID_KERNEL_DEFINITION ");
+      break;
+    case -48:
+      printf("CL_INVALID_KERNEL ");
+      break;
+    case -49:
+      printf("CL_INVALID_ARG_INDEX ");
+      break;
+    case -50:
+      printf("CL_INVALID_ARG_VALUE ");
+      break;
+    case -51:
+      printf("CL_INVALID_ARG_SIZE ");
+      break;
+    case -52:
+      printf("CL_INVALID_KERNEL_ARGS ");
+      break;
+    case -53:
+      printf("CL_INVALID_WORK_DIMENSION ");
+      break;
+    case -54:
+      printf("CL_INVALID_WORK_GROUP_SIZE ");
+      break;
+    case -55:
+      printf("CL_INVALID_WORK_ITEM_SIZE ");
+      break;
+    case -56:
+      printf("CL_INVALID_GLOBAL_OFFSET ");
+      break;
+    case -57:
+      printf("CL_INVALID_EVENT_WAIT_LIST ");
+      break;
+    case -58:
+      printf("CL_INVALID_EVENT ");
+      break;
+    case -59:
+      printf("CL_INVALID_OPERATION ");
+      break;
+    case -60:
+      printf("CL_INVALID_GL_OBJECT ");
+      break;
+    case -61:
+      printf("CL_INVALID_BUFFER_SIZE ");
+      break;
+    case -62:
+      printf("CL_INVALID_MIP_LEVEL ");
+      break;
+    case -63:
+      printf("CL_INVALID_GLOBAL_WORK_SIZE ");
+      break;
+    default:
+      printf("UNRECOGNIZED ERROR CODE (%d)", error);
+  }
+}
+
+// Returns the platform name.
+std::string getPlatformName(cl_platform_id pid) {
+  cl_int status;
+
+  size_t sz;
+  status = clGetPlatformInfo(pid, CL_PLATFORM_NAME, 0, NULL, &sz);
+  if (status != CL_SUCCESS) {
+    std::cout << "Query for platform name size failed" << std::endl;
+  }
+
+  //scoped_array<char> name(sz);
+  char name[256];
+  status = clGetPlatformInfo(pid, CL_PLATFORM_NAME, sz, name, NULL);
+  if (status != CL_SUCCESS) {
+      std::cout << "Query for platform name failed" << std::endl;
+  }
+
+  //return name.get();
+  return name;
+}
+
+
+std::string getDeviceName(cl_device_id did) {
+  cl_int status;
+
+  size_t sz;
+  status = clGetDeviceInfo(did, CL_DEVICE_NAME, 0, NULL, &sz);
+  if (status != CL_SUCCESS) {
+      std::cout << "Failed to get device name size" << std::endl;
+  }
+
+  //scoped_array<char> name(sz);
+  char name[256];
+  status = clGetDeviceInfo(did, CL_DEVICE_NAME, sz, name, NULL);
+  if (status != CL_SUCCESS) {
+      std::cout << "Failed to get device name" << std::endl;
+  }
+
+  //return name.get();
+  return name;
+}
 
 OCLUtil::OCLUtil(std::string xclbin, std::string xclkernel) {
   xcl_name = xclbin;
@@ -17,8 +218,10 @@ void OCLUtil::Setup_Platform() {
 }
 
 void OCLUtil::Setup() {
+    std::cout << "OCLUtil::Setup()" << std::endl;
   std::string path(".build_release/opencl/src/caffe/layers/");
   std::string temp = path + xcl_name;
+  std::cout << "Binary file name is " << temp << std::endl;
   const char *filename = temp.c_str();
   std::ifstream file_stream(filename);
   std::string source( (std::istreambuf_iterator<char>(file_stream)),
@@ -26,18 +229,49 @@ void OCLUtil::Setup() {
   size_t sourceSize = source.length();
  
   const char *sourceStr = source.c_str();
+  cl_int status;
 
   oclPlatform.resize(1);
-  clGetPlatformIDs(0, NULL, &oclNumPlatforms);
-  clGetPlatformIDs(1, &(oclPlatform[0]), NULL);
-  clGetDeviceIDs(oclPlatform[0], CL_DEVICE_TYPE_ACCELERATOR, 1, &oclDevices,
+  status = clGetPlatformIDs(0, NULL, &oclNumPlatforms);
+  if (status != CL_SUCCESS) {
+      std::cout << "Query for number of platforms failed" << std::endl;
+  }
+  status = clGetPlatformIDs(1, &(oclPlatform[0]), NULL);
+  if (status != CL_SUCCESS) {
+      std::cout << "Query for all platform ids failed" << std::endl;
+  }
+  std::string platform_name = getPlatformName(oclPlatform[0]);
+  std::cout << "Platform: " << platform_name << std::endl;
+  cl_uint num_devices;
+  status = clGetDeviceIDs(oclPlatform[0], CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
+  if (status != CL_SUCCESS) {
+      std::cout << "Query for number of devices failed" << std::endl;
+  }
+  std::cout << "Found " << num_devices << " devices" << std::endl;
+  status = clGetDeviceIDs(oclPlatform[0], CL_DEVICE_TYPE_ACCELERATOR, 1, &oclDevices,
       NULL);
-  oclContext = clCreateContext(NULL, 1, &oclDevices, NULL, NULL, NULL);
+  if (status != CL_SUCCESS) {
+      std::cout << "Query device type accelerator failed" << std::endl;
+  }
+  std::string device_name = getDeviceName(oclDevices);
+  std::cout << "Device name: " << device_name << std::endl;
+  oclContext = clCreateContext(NULL, 1, &oclDevices, NULL, NULL, &status);
+  if (status != CL_SUCCESS) {
+      std::cout << "Create context failed" << std::endl;
+  }
   oclCommandQueue = clCreateCommandQueue(oclContext, oclDevices,
       /*CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE*/ 0, NULL);
+  cl_int binary_status;
   cl_program oclProgram = clCreateProgramWithBinary(oclContext, 1,
-      &oclDevices, &sourceSize, (const unsigned char **)(&sourceStr), NULL,
-      NULL);
+      &oclDevices, &sourceSize, (const unsigned char **)(&sourceStr), &binary_status,
+      &status);
+  if (status != CL_SUCCESS) {
+      std::cout << "Create program failed" << std::endl;
+      std::cout << "source size is " << sourceSize << std::endl;
+  }
+  if (binary_status != CL_SUCCESS) {
+      std::cout << "Failed to load binary for device" << std::endl;
+  }
   clBuildProgram(oclProgram, 0, NULL, NULL, NULL, NULL);
   oclKernel = clCreateKernel(oclProgram, kernel.c_str(), NULL);
 }

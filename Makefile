@@ -213,7 +213,7 @@ endif
 PYTHON_LIBRARIES ?= boost_python python2.7
 WARNINGS := -Wall -Wno-sign-compare
 
-CLFLAGS := --xdevice $(DSA) -t sw_emu
+CLFLAGS := --xdevice $(DSA) -t hw_emu
 
 ##############################
 # Set build directories
@@ -348,7 +348,7 @@ ifeq ($(USE_CUDNN), 1)
 	COMMON_FLAGS += -DUSE_CUDNN
 endif
 ifeq ($(USE_OCL), 1)
-	LIBRARIES += xilinxopencl lmx6.0
+	LIBRARIES += xilinxopencl #lmx6.0
 	COMMON_FLAGS += -DUSE_OCL
 endif
 
@@ -432,7 +432,7 @@ ifeq ($(USE_OCL), 1)
 INCLUDE_DIRS += $(XILINX_SDX)/runtime/include/1_2
 # Used for AWS to get around conflicting libraries
 #LIBRARY_DIRS += $(XILINX_SDX)/XILINX_runtime/
-LIBRARY_DIRS += $(XLINX_SDX)/runtime/lib/x86_64
+LIBRARY_DIRS += $(XILINX_SDX)/runtime/lib/x86_64
 endif
 LIBRARY_DIRS += $(LIB_BUILD_DIR)
 
@@ -643,6 +643,7 @@ $(TEST_ALL_BIN): $(TEST_MAIN_SRC) $(TEST_OBJS) $(GTEST_OBJ) \
 $(TEST_ALL_OCL_BIN): $(TEST_OCL_MAIN_SRC) $(TEST_OCL_OBJS) $(GTEST_OBJ) \
 		| $(TEST_OCL_BIN_DIR)
 	@ echo CXX/LD -o $@ $<
+	@ echo $(LINKFLAGS) $(LDFLAGS)
 	$(Q)$(CXX) $(TEST_OCL_MAIN_SRC) $(TEST_OCL_OBJS) $(GTEST_OBJ) \
 		-o $@ $(LINKFLAGS) $(LDFLAGS) -Wl,-rpath,$(ORIGIN)/../lib
 

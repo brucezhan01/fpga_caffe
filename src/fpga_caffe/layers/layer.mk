@@ -4,13 +4,14 @@ ifndef XILINX_SDX
 	$(error XILINX_SDX is required and should point the SDAccel install location)
 endif
 
-SDA_FLOW = cpu_emu
+SDA_FLOW = hw
 XOCC = xocc
 KERNEL_NAME = crp_layer_hwcn_cpfp
 KERNEL_SRCS = $(KERNEL_NAME).cpp
 NK = 1
 
-DSA = xilinx:adm-pcie-8k5:2ddr:3.2
+#DSA = xilinx:adm-pcie-8k5:2ddr:3.2
+DSA = xilinx:kcu1500:4ddr-xpr:4.0
 
 XCLBIN_NAME=$(KERNEL_NAME)
 
